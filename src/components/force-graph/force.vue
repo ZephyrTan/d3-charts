@@ -1,18 +1,17 @@
 <template>
-  <div class="app-container">
-    <router-view/>
+  <div class="force-chart">
+    123
   </div>
 </template>
 
 <script>
-
 export default {
-  name: 'App',
-  components: {}
+  name: "force"
 };
 </script>
-<style>
-.app-container {
+
+<style scoped>
+.force-chart {
   height: 100%;
   width: 100%
 }
