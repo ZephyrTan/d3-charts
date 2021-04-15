@@ -1,6 +1,11 @@
 <template>
   <div class="app-container">
-    <router-view/>
+    <div class="left-menu">
+
+    </div>
+    <div class="right-container">
+      <router-view/>
+    </div>
   </div>
 </template>
 
@@ -11,9 +16,18 @@ export default {
   components: {}
 };
 </script>
-<style>
+<style lang="scss">
 .app-container {
   height: 100%;
-  width: 100%
+  width: 100%;
+  display: flex;
+
+  .left-menu {
+    width: 200px
+  }
+
+  .right-container {
+    flex-grow: 1;
+  }
 }
 </style>
