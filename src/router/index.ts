@@ -4,7 +4,7 @@ import Force from '../components/force-graph/force.vue';
 const routes = [
     {
         path: "/",
-        name: "Home",
+        name: "Force",
         component: Force,
     }
 ];

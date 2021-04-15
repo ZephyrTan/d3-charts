@@ -1,7 +1,7 @@
 <template>
   <div class="app-container">
     <div class="left-menu">
-
+      <nav-menu></nav-menu>
     </div>
     <div class="right-container">
       <router-view/>
@@ -10,10 +10,11 @@
 </template>
 
 <script>
+import NavMenu from "./views/Layout/nav-menu";
 
 export default {
   name: 'App',
-  components: {}
+  components: {NavMenu}
 };
 </script>
 <style lang="scss">
@@ -23,7 +24,7 @@ export default {
   display: flex;
 
   .left-menu {
-    width: 200px
+    width: 200px;
   }
 
   .right-container {
