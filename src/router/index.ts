@@ -1,5 +1,5 @@
 import {createWebHistory, createRouter} from "vue-router";
-import Force from '../components/force-graph/force.vue';
+import Force from '../components/force-graph/force-graph.vue';
 
 const routes = [
     {

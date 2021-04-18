@@ -2,18 +2,27 @@
   "name": "d3-charts",
   "version": "0.0.0",
   "scripts": {
-    "dev": "vite",
+    "dev": "yarn vite",
+    "mock dev": "cross-env NODE_ENV=development yarn vite",
     "build": "vite build"
   },
   "dependencies": {
+    "d3": "^6.7.0",
     "element-plus": "^1.0.2-beta.40",
+    "element3": "^0.0.40",
+    "reflect-metadata": "^0.1.13",
     "vue": "^3.0.4",
+    "vue-class-component": "^7.2.6",
+    "vue-property-decorator": "^9.1.2",
     "vue-router": "^4.0.6"
   },
   "devDependencies": {
+    "@vitejs/plugin-vue": "^1.2.1",
     "@vue/compiler-sfc": "^3.0.4",
+    "cross-env": "^7.0.3",
     "mockjs": "^1.1.0",
     "sass": "^1.32.10",
-    "vite": "^1.0.0-rc.13"
+    "vite": "^2.1.5",
+    "vite-plugin-mock": "^2.5.0"
   }
 }
