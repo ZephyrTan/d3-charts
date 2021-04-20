@@ -6,6 +6,7 @@
 import * as d3 from 'd3'
 import {onMounted} from "vue";
 
+
 let data = {
   "nodes": [
     {"id": "Myriel", "group": 1},
