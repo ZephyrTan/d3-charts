@@ -5,6 +5,8 @@
 <script lang="ts" setup>
 import * as d3 from 'd3'
 import {onMounted} from "vue";
+import axios from "axios";
+import Color from '../../utils/color.js'
 
 let data = {
   "nodes": [
@@ -343,16 +345,18 @@ let data = {
     {"source": "Mme.Hucheloup", "target": "Enjolras", "value": 1}
   ]
 }
-const links = data.links.map(d => Object.create(d));
-const nodes = data.nodes.map(d => Object.create(d));
 const width = 800
 const height = 800
 let [simulation, svg, link, node] = [null]
+let colorList = Color.getColorList(30)
 
 const color = d => {
-  const scale = d3.scaleOrdinal(d3.schemeCategory10);
-  console.log(scale(d.group), d.group)
-  return scale(d.group);
+  console.log(d.type)
+  return colorList[d.type]
+}
+
+const getData = () => {
+  return axios.post('http://192.168.100.15:1001/weapon/getNextNodes', {id: 125331})
 }
 
 const drag = simulation => {
@@ -380,11 +384,15 @@ const drag = simulation => {
       .on("end", dragended);
 }
 
-const createSimulation = () => {
+const createSimulation = (nodes, links) => {
+
   simulation = d3.forceSimulation(nodes)
-      .force("link", d3.forceLink(links).id(d => d.id))
+      .force("links", d3.forceLink(links).id(d => d.id))
       .force("charge", d3.forceManyBody())
-      .force("center", d3.forceCenter(width / 2, height / 2));
+      .force("center", d3.forceCenter(400, 200))
+      .force("charge", d3.forceManyBody().strength(-400))
+      // 碰撞力 防止节点重叠
+      .force('collide', d3.forceCollide(15));
   simulation.on("tick", () => {
     link.attr("x1", d => d.source.x).attr("y1", d => d.source.y).attr("x2", d => d.target.x).attr("y2", d => d.target.y);
     node.attr("cx", d => d.x).attr("cy", d => d.y);
@@ -395,7 +403,7 @@ const createSvg = () => {
       .attr("viewBox", [0, 0, width, height]);
 }
 
-const addLinks = () => {
+const addLinks = (links) => {
   link = svg.append("g")
       .attr("stroke", "#999")
       .attr("stroke-opacity", 0.6)
@@ -405,24 +413,60 @@ const addLinks = () => {
       .attr("stroke-width", d => Math.sqrt(d.value));
 }
 
-const addNodes = () => {
+const addNodes = (nodes) => {
   node = svg.append("g")
       .attr("stroke", "#fff")
       .attr("stroke-width", 1.5)
       .selectAll("circle")
       .data(nodes)
       .join("circle")
-      .attr("r", 5)
+      .attr("r", 10)
       .attr("fill", color)
       .call(drag(simulation));
   node.append("title")
       .text(d => d.id);
+  node.append("text")
+      .attr("dy", "10px")
+      .attr("text-anchor", "middle") //在圆圈中加上数据
+      .style('fill', "#FFFFFF")
+      .attr('x', function (d) {
+        appendCircleText(d, this);
+      });
+
+  function appendCircleText(d, _this) {
+    let circleText = d.name;
+    //如果小于四个字符，不换行
+    if (circleText && circleText.length > 12) {
+      // circleText = circleText.substring(0, 4) + "...";
+      let preCircleText = circleText.slice(0, 12);
+      let endCircleText = circleText.slice(12, circleText.length);
+      circleText = preCircleText + "\n" + endCircleText;
+      // d3.select(_this).text(function () {
+      //   return '';
+      // });
+    }
+    d3.select(_this).append('tspan').attr('x', 0).attr('y', 0).attr("font-size", 12)
+        .text(function () {
+          return circleText;
+        });
+  }
+
 }
 onMounted(() => {
-  createSimulation();
-  createSvg()
-  addNodes()
-  addLinks()
+  getData().then(res => {
+    let {data: t} = res
+    let nodes = t.nodes
+    nodes.push({
+      id: 125331,
+      name: '主节点',
+      type: 0
+    })
+    let links = t.links
+    createSimulation(nodes, links);
+    createSvg()
+    addNodes(nodes)
+    addLinks(links)
+  })
 })
 </script>
 <style src="./force-graph.scss" lang="scss" scoped></style>
