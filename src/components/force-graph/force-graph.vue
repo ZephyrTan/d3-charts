@@ -345,13 +345,10 @@ let data = {
     {"source": "Mme.Hucheloup", "target": "Enjolras", "value": 1}
   ]
 }
-const width = 800
-const height = 800
-let [simulation, svg, link, node] = [null]
+let [simulation, svg, link, node, width, height] = [null]
 let colorList = Color.getColorList(30)
 
 const color = d => {
-  console.log(d.type)
   return colorList[d.type]
 }
 
@@ -385,7 +382,6 @@ const drag = simulation => {
 }
 
 const createSimulation = (nodes, links) => {
-
   simulation = d3.forceSimulation(nodes)
       .force("links", d3.forceLink(links).id(d => d.id))
       .force("charge", d3.forceManyBody())
@@ -400,7 +396,7 @@ const createSimulation = (nodes, links) => {
 }
 const createSvg = () => {
   svg = d3.select('#graph').append("svg")
-      .attr("viewBox", [0, 0, width, height]);
+      .attr("viewBox", [0, 0, width / 2, height / 2]);
 }
 
 const addLinks = (links) => {
@@ -453,6 +449,8 @@ const addNodes = (nodes) => {
 
 }
 onMounted(() => {
+  width = document.getElementById("graph").clientWidth
+  height = document.getElementById("graph").clientHeight
   getData().then(res => {
     let {data: t} = res
     let nodes = t.nodes
@@ -464,8 +462,8 @@ onMounted(() => {
     let links = t.links
     createSimulation(nodes, links);
     createSvg()
-    addNodes(nodes)
     addLinks(links)
+    addNodes(nodes)
   })
 })
 </script>
