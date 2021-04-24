@@ -2,6 +2,7 @@ import * as d3 from "d3";
 import Color from '../../utils/color.js'
 import {Option} from "./interface/Option";
 
+
 export class ForceGraph {
     // 选择的元素，即创建力导向图的div
     private selector: any
@@ -19,26 +20,72 @@ export class ForceGraph {
     private readonly width: number
     private readonly height: number
 
+    // 默认配置项
+    private readonly defaultOption: Option = {
+        color: null,
+        nodeAttr: {
+            stroke: '#fff',
+            strokeWidth: 1.5,
+            radius: 10,
+            clickEvent: ({event, node}) => {
+                console.log("node-click", node)
+            },
+            rightClickEvent: ({event, node}) => {
+                console.log("node-right-click", node)
+            },
+            dblClickEvent: ({event, node}) => {
+                console.log("node-dblclick", node)
+            }
+        },
+        canDrag: true,
+        canRoam: true,
+        colorKey: "type",
+        colorListLength: 20,
+        dragEndedCallback: ({event, simulation}) => {
+            if (!event.active) simulation.alphaTarget(0);
+            event.subject.fx = null;
+            event.subject.fy = null;
+        },
+        dragStartedCallback: ({event, simulation}) => {
+            if (!event.active) simulation.alphaTarget(0.3).restart();
+            event.subject.fx = event.subject.x;
+            event.subject.fy = event.subject.y;
+        },
+        draggedCallback: ({event, simulation}) => {
+            event.subject.fx = event.x;
+            event.subject.fy = event.y;
+        },
+        links: [],
+        nodes: [],
+        scaleExtent: [0.2, 8],
+        selector: "",
+        setNodeColorCallback: ({d, colorKey, colorListLength}) => {
+            let colorList = Color.getColorList(colorListLength ? colorListLength : 20)
+            return colorList[colorKey ? d[colorKey] : (d.type ? d.type : '#000')]
+        },
+        zoomCallback: ({event, svg, node, link}) => {
+            node.attr("transform", event.transform);
+            link.attr("transform", event.transform);
+        }
+    }
+
     /**
      * 构造函数
      * @param option 初始化配置项
      */
     constructor(option: Option) {
-        this.option = option
+        option.colorKey = 'group'
+        this.option = Object.assign(this.defaultOption, option)
         this.selector = document.getElementById(option.selector)
         this.width = this.selector.clientWidth
         this.height = this.selector.clientHeight
     }
 
     init() {
-        this.createSimulation(this.option && this.option.nodes ? this.option.nodes : [], this.option && this.option.nodes ? this.option.links : [])
+        this.createSimulation(this.option.nodes, this.option.links)
         this.createSvg()
-        if (this.option && this.option.links) {
-            this.addLinks(this.option.links)
-        }
-        if (this.option && this.option.nodes) {
-            this.addNodes(this.option.nodes)
-        }
+        this.addLinks(this.option.links)
+        this.addNodes(this.option.nodes)
     }
 
     private createSimulation = (nodes, links) => {
@@ -57,41 +104,29 @@ export class ForceGraph {
     private createSvg = () => {
         this.svg = d3.select('#' + this.option.selector).append("svg")
             .attr("viewBox", [0, 0, this.width / 2, this.height / 2]);
-        this.svg.call(d3.zoom().extent([[0, 0], [this.width, this.height]]).scaleExtent([0.2, 8]).on("zoom", this.zoomed));
+        this.svg.call(d3.zoom().extent([[0, 0], [this.width, this.height]]).scaleExtent(this.option.scaleExtent).on("zoom", this.zoomed));
     }
 
-    private zoomed = ({transform}) => {
-        this.node.attr("transform", transform);
-        this.link.attr("transform", transform);
+    private zoomed = (event) => {
+        let params = {
+            event, svg: this.svg, node: this.node, link: this.link
+        }
+        this.option.zoomCallback(params)
     }
     private drag = simulation => {
 
         let option = this.option
 
         function dragstarted(event) {
-            if (!event.active) simulation.alphaTarget(0.3).restart();
-            if (typeof option.dragstarted == 'function') {
-                option.dragstarted.call(this, event)
-            }
-            event.subject.fx = event.subject.x;
-            event.subject.fy = event.subject.y;
+            option.dragStartedCallback({event, simulation})
         }
 
         function dragged(event) {
-            if (typeof option.dragged == 'function') {
-                option.dragged.call(this, event)
-            }
-            event.subject.fx = event.x;
-            event.subject.fy = event.y;
+            option.draggedCallback({event, simulation})
         }
 
         function dragended(event) {
-            if (!event.active) simulation.alphaTarget(0);
-            if (typeof option.dragended == 'function') {
-                option.dragended.call(this, event)
-            }
-            event.subject.fx = null;
-            event.subject.fy = null;
+            option.dragEndedCallback({event, simulation})
         }
 
         return d3.drag()
@@ -108,16 +143,22 @@ export class ForceGraph {
         let _this = this
         let svg = this.svg
         let simulation = this.simulation
-        let color = this.option?.color ? this.option.color : this.getNodeColor
+        let color = this.option.color ? this.option.color : this.getNodeColor
         this.node = svg.append("g")
-            .attr("stroke", "#fff")
-            .attr("stroke-width", 1.5)
+            .attr("stroke", this.option.nodeAttr.stroke)
+            .attr("stroke-width", this.option.nodeAttr.strokeWidth)
             .selectAll("circle")
             .data(nodes)
             .join("circle")
-            .attr("r", 10)
+            .attr("r", this.option.nodeAttr.radius)
             .attr("fill", color)
-            .call(this.drag(simulation));
+            .call(this.drag(simulation))
+            .on('click', function (event, node) {
+                _this.option.nodeAttr.clickEvent({event, node})
+            })
+            .on('contextmenu', function (event, node) {
+                _this.option.nodeAttr.rightClickEvent({event, node})
+            })
         this.node.append("title")
             .text(d => d.id);
         this.node.append("text")
@@ -160,7 +201,7 @@ export class ForceGraph {
     }
 
     private getNodeColor = (d) => {
-        let colorList = Color.getColorList(20)
-        return colorList[this.option && this.option.colorKey ? d[this.option.colorKey] : d.group]
+        let params = {d, colorKey: this.option.colorKey, colorListLength: this.option.colorListLength}
+        return this.option.setNodeColorCallback(params)
     }
 }
